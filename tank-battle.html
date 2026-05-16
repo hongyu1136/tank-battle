@@ -174,8 +174,8 @@ let player = null;
 let enemies = [];
 let bullets = [];
 let particles = [];
-let enemySpawnTimer = 0;
-let enemySpawnInterval = 180;
+let enemySpawnTimer = 100;
+let enemySpawnInterval = 120;
 let maxEnemiesOnScreen = 4;
 let enemiesSpawned = 0;
 const spawnPoints = [
@@ -191,17 +191,20 @@ class Tank {
     this.isPlayer = isPlayer;
     this.size = TILE_SIZE * 0.8;
     this.half = this.size / 2;
+    this.health = isPlayer ? 3 : 1;
     this.shootCooldown = 0;
     this.shootDelay = isPlayer ? 15 : 70;
     this.moveTimer = 0;
     this.moveDir = dir;
     this.active = true;
+    this.invincible = 0;
   }
 
   update() {
     if (!this.active) return;
     if (this.shootCooldown > 0) this.shootCooldown--;
-    if (this.health !== undefined && this.health <= 0) {
+    if (this.invincible > 0) this.invincible--;
+    if (this.health <= 0) {
       this.active = false;
       if (!this.isPlayer) {
         spawnExplosion(this.x, this.y);
@@ -214,6 +217,7 @@ class Tank {
 
   draw() {
     if (!this.active) return;
+    if (this.invincible > 0 && this.invincible % 6 < 3) return;
 
     ctx.save();
     ctx.translate(this.x, this.y);
@@ -424,7 +428,7 @@ function restartGame() {
   enemiesRemaining = 20; enemiesSpawned = 0;
   enemies = []; bullets = []; particles = [];
   gameOver = false; gameWin = false; paused = false;
-  enemySpawnTimer = 0;
+  enemySpawnTimer = 100;
   document.getElementById('game-over').style.display = 'none';
   buildMap();
   player = new Tank(12*TILE_SIZE+TILE_SIZE/2, 24*TILE_SIZE+TILE_SIZE/2, 'up', '#4a4', 3, true);
@@ -488,8 +492,8 @@ function handleInput() {
 }
 
 function shoot(tank, isPlayer=true) {
-  const bx = tank.x, by = tank.y;
-  let off = tank.half + 7;
+  let bx = tank.x, by = tank.y;
+  const off = tank.half + 7;
   switch (tank.dir) {
     case 'up': by -= off; break;
     case 'down': by += off; break;
@@ -575,26 +579,38 @@ function update() {
     } else {
       if (player && player.active && checkCollision(bullet, player)) {
         bullet.active = false;
-        lives--;
-        updateUI();
-        if (lives <= 0) {
+        if (player.invincible > 0) continue;
+        player.health--;
+        player.invincible = 60;
+        if (player.health <= 0) {
+          lives--;
+          updateUI();
           spawnExplosion(player.x, player.y);
           player.active = false;
-          endGame(false);
-        } else {
-          player.x = 12*TILE_SIZE+TILE_SIZE/2;
-          player.y = 24*TILE_SIZE+TILE_SIZE/2;
-          player.dir = 'up';
-          for (const enemy of enemies) {
-            if (!enemy.active) continue;
-            const dx = enemy.x - player.x;
-            const dy = enemy.y - player.y;
-            if (Math.abs(dx) < TILE_SIZE*3 && Math.abs(dy) < TILE_SIZE*3) {
-              spawnExplosion(enemy.x, enemy.y);
-              enemy.active = false;
-              score += 50;
-              enemiesRemaining--;
-            }
+          if (lives <= 0) {
+            endGame(false);
+          } else {
+            // Respawn after short delay
+            setTimeout(() => {
+              if (gameOver) return;
+              player.x = 12*TILE_SIZE+TILE_SIZE/2;
+              player.y = 24*TILE_SIZE+TILE_SIZE/2;
+              player.dir = 'up';
+              player.active = true;
+              player.health = 3;
+              player.invincible = 120;
+              for (const enemy of enemies) {
+                if (!enemy.active) continue;
+                const dx = enemy.x - player.x;
+                const dy = enemy.y - player.y;
+                if (Math.abs(dx) < TILE_SIZE*3 && Math.abs(dy) < TILE_SIZE*3) {
+                  spawnExplosion(enemy.x, enemy.y);
+                  enemy.active = false;
+                  score += 50;
+                  enemiesRemaining--;
+                }
+              }
+            }, 500);
           }
         }
       }
