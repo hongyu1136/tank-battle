@@ -431,7 +431,7 @@ function restartGame() {
   enemySpawnTimer = 100;
   document.getElementById('game-over').style.display = 'none';
   buildMap();
-  player = new Tank(12*TILE_SIZE+TILE_SIZE/2, 24*TILE_SIZE+TILE_SIZE/2, 'up', '#4a4', 3, true);
+  player = new Tank(9*TILE_SIZE+TILE_SIZE/2, 21*TILE_SIZE+TILE_SIZE/2, 'up', '#4a4', 3, true);
   updateUI();
 }
 
@@ -725,7 +725,7 @@ function gameLoop() {
 }
 
 buildMap();
-player = new Tank(12*TILE_SIZE+TILE_SIZE/2, 24*TILE_SIZE+TILE_SIZE/2, 'up', '#4a4', 3, true);
+player = new Tank(9*TILE_SIZE+TILE_SIZE/2, 21*TILE_SIZE+TILE_SIZE/2, 'up', '#4a4', 3, true);
 updateUI();
 gameLoop();
 </script>
